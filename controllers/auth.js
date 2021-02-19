@@ -7,6 +7,7 @@ const crypto = require('crypto');
 
 const Admin = require('../models/admin');
 const Employee = require('../models/Employee');
+const { post } = require('../routes/admin');
 
 const transporter = nodemailer.createTransport(sendgridTransport({
   auth: {
@@ -53,7 +54,7 @@ const transporter = nodemailer.createTransport(sendgridTransport({
     const phoneNumber = req.body.phoneNumber;
     const department = req.body.department;
     
-    Admin.findOne({ email: email })
+    Employee.findOne({ email: email })
       .then(userDoc => {
         if (userDoc) {
           return res.send('error', 'E-Mail exists already, please pick a different one.'); 
@@ -122,3 +123,48 @@ const transporter = nodemailer.createTransport(sendgridTransport({
       res.send('Logged Out');
     });
   }
+
+  exports.postReset = (req, res, next) => {
+    crypto.randomBytes(32, (err, buffer) => {
+      if (err){
+        console.log(err);
+        return res.send('Reset Error');
+      }
+      const token = buffer.toString('hex');
+      Employee.findOne({email: req.body.email})
+      .then(employee => {
+        if (!employee) {
+          req.flash('error', 'No account found');
+          return res.send('Error Check email');
+        }
+        employee.resetToken = token;
+        employee.resetTokenExpration = Date.now() + 3600000;
+        return employee.save();
+      })
+      .then(result => {
+        transporter.sendMail({
+          to: req.body.email,
+          from: 'obedampah17@gmail.com',
+          subject: 'Password Reset',
+          html: `
+          <p> You requested a password reset </p>
+          <p> Click this <a href="http://localhost:3000/reset/password/${token}">link</a> to set a new Password.</p>
+          `
+        })
+        return res.send('password reseted');
+      })
+    })
+  };
+
+  exports.getPasswordReset = (req, res, next) => {
+    const token = req.params.token;
+    Employee.findOne({resetToken : token, resetTokenExpration : { $gt: Date.now()}
+})
+.then( employee => {
+
+  res.send(`${employee.name} found for password reset`)
+})
+.catch(err => {
+  console.log(err);
+});
+  };

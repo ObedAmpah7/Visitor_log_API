@@ -22,7 +22,9 @@ const employeeSchema = new Schema ({
     password: {
         type: String,
         required:true
-    }
+    },
+    resetToken: String,
+    resetTokenExpration: Date
 })
 
 module.exports = mongoose.model('Employee', employeeSchema);
