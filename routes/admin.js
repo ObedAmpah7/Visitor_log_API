@@ -25,7 +25,7 @@ router.put('/updateadmin/:id', AdminController.editAdmin);
 
 router.put('/updateemployee/:id', AdminController.editEmployee);
 
-router.post('/reset/password/:token', AuthController.getPasswordReset);
+router.put('/reset/password/:token', AuthController.getPasswordReset);
 
 router.post('/reset', AuthController.postReset);
 

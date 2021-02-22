@@ -148,7 +148,7 @@ const transporter = nodemailer.createTransport(sendgridTransport({
           subject: 'Password Reset',
           html: `
           <p> You requested a password reset </p>
-          <p> Click this <a href="http://localhost:3000/reset/password/${token}">link</a> to set a new Password.</p>
+          <p> Click this <a href="http://localhost:3000/reset/pass/${token}">link</a> to set a new Password.</p>
           `
         })
         return res.send('password reseted');
@@ -157,14 +157,30 @@ const transporter = nodemailer.createTransport(sendgridTransport({
   };
 
   exports.getPasswordReset = (req, res, next) => {
+    const newPassword = req.body.password;
     const token = req.params.token;
+    let resetEmployee;
     Employee.findOne({resetToken : token, resetTokenExpration : { $gt: Date.now()}
 })
 .then( employee => {
-
-  res.send(`${employee.name} found for password reset`)
+  console.log(employee);
+  resetEmployee = employee;
+  return bcrypt.hash(newPassword, 12);
+  // res.send(`${employee.name} found for password reset`)
+})
+.then( hashedPassword => {
+  resetEmployee.password = hashedPassword;
+  resetEmployee.token = undefined;
+  resetEmployee.resetTokenExpration = undefined;
+  return resetEmployee.save();
+})
+.then( result => {
+  res.send(`${resetEmployee.name} password reseted`);
 })
 .catch(err => {
   console.log(err);
 });
   };
+
+  // exports.postPasswordReset
+
